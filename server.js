@@ -1,7 +1,5 @@
 // ============================================================
-//  server.js  —  eSign Platform Backend
-//  This file runs on your computer/server using Node.js
-//  It handles: saving signatures, serving pages, file uploads
+//  server.js  —  eSign Platform Backend (MongoDB version)
 // ============================================================
 
 const express      = require('express');
@@ -11,62 +9,74 @@ const basicAuth    = require('express-basic-auth');
 const path         = require('path');
 const fs           = require('fs');
 const { v4: uuid } = require('uuid');
+const mongoose     = require('mongoose');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
-// ── Admin login credentials ──────────────────────────────────
-// Change these before going live!
-// You can also set them as environment variables on your host.
-const ADMIN_USER = process.env.ADMIN_USER || 'admin';
-const ADMIN_PASS = process.env.ADMIN_PASS || 'admin123';
+// ── Admin credentials ────────────────────────────────────────
+const ADMIN_USER   = process.env.ADMIN_USER   || 'admin';
+const ADMIN_PASS   = process.env.ADMIN_PASS   || 'admin123';
+const MONGODB_URI  = process.env.MONGODB_URI  || '';
 
-// ── File paths ───────────────────────────────────────────────
-const DATA_FILE   = path.join(__dirname, 'data', 'signatures.json');
-const CONFIG_FILE = path.join(__dirname, 'data', 'config.json');
-const UPLOAD_DIR  = path.join(__dirname, 'uploads');
+// ── Connect to MongoDB ───────────────────────────────────────
+mongoose.connect(MONGODB_URI)
+  .then(() => console.log('✓ Connected to MongoDB Atlas!'))
+  .catch(err => console.error('✗ MongoDB connection error:', err));
 
-// ── Create folders and files if they don't exist ─────────────
-if (!fs.existsSync(path.join(__dirname, 'data')))   fs.mkdirSync(path.join(__dirname, 'data'));
-if (!fs.existsSync(UPLOAD_DIR))                     fs.mkdirSync(UPLOAD_DIR);
-if (!fs.existsSync(DATA_FILE))                      fs.writeFileSync(DATA_FILE, '[]');
-if (!fs.existsSync(CONFIG_FILE)) {
-  fs.writeFileSync(CONFIG_FILE, JSON.stringify({
-    platformTitle : 'Document Signature Platform',
-    formTitle     : 'Please review and sign',
-    formDesc      : 'Read the document carefully, then enter your name and draw your signature.',
-    docUrl        : '',
-    docLabel      : 'Click to open and review the document',
-    docType       : 'url'
-  }, null, 2));
+// ── MongoDB Schemas ──────────────────────────────────────────
+
+// Signature record
+const signatureSchema = new mongoose.Schema({
+  id            : { type: String, default: () => uuid() },
+  name          : { type: String, required: true },
+  signatureData : { type: String, required: true },   // base64 PNG image
+  submittedAt   : { type: Date,   default: Date.now },
+  ip            : { type: String, default: '' }
+});
+const Signature = mongoose.model('Signature', signatureSchema);
+
+// Platform config (only one document, we reuse it)
+const configSchema = new mongoose.Schema({
+  platformTitle : { type: String, default: 'Document Signature Platform' },
+  formTitle     : { type: String, default: 'Please review and sign' },
+  formDesc      : { type: String, default: 'Read the document carefully, then enter your name and draw your signature.' },
+  docUrl        : { type: String, default: '' },
+  docLabel      : { type: String, default: 'Click to open and review the document' },
+  docType       : { type: String, default: 'url' }
+});
+const Config = mongoose.model('Config', configSchema);
+
+// ── Helper: get or create config ─────────────────────────────
+async function getConfig() {
+  let cfg = await Config.findOne();
+  if (!cfg) cfg = await Config.create({});
+  return cfg;
 }
 
-// ── Helper functions ─────────────────────────────────────────
-function readSignatures()    { return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); }
-function saveSignatures(arr) { fs.writeFileSync(DATA_FILE, JSON.stringify(arr, null, 2)); }
-function readConfig()        { return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8')); }
-function saveConfig(obj)     { fs.writeFileSync(CONFIG_FILE, JSON.stringify(obj, null, 2)); }
+// ── File paths ───────────────────────────────────────────────
+const UPLOAD_DIR = path.join(__dirname, 'uploads');
+if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR);
 
 // ── Middleware ───────────────────────────────────────────────
 app.use(cors());
-app.use(express.json({ limit: '15mb' }));           // allow large signature images
-app.use(express.static(path.join(__dirname, 'public'))); // serve HTML/CSS/JS files
+app.use(express.json({ limit: '15mb' }));
+app.use(express.static(path.join(__dirname, 'public')));
 
-// ── File upload setup (for PDF documents) ───────────────────
+// ── File upload (PDF) ────────────────────────────────────────
 const storage = multer.diskStorage({
   destination : (req, file, cb) => cb(null, UPLOAD_DIR),
   filename    : (req, file, cb) => cb(null, 'document.pdf')
 });
 const upload = multer({
   storage,
-  limits      : { fileSize: 25 * 1024 * 1024 },  // 25 MB max
-  fileFilter  : (req, file, cb) => {
-    const allowed = ['application/pdf', 'image/jpeg', 'image/png'];
-    cb(null, allowed.includes(file.mimetype));
+  limits     : { fileSize: 25 * 1024 * 1024 },
+  fileFilter : (req, file, cb) => {
+    cb(null, ['application/pdf', 'image/jpeg', 'image/png'].includes(file.mimetype));
   }
 });
 
-// ── Admin authentication middleware ─────────────────────────
+// ── Admin auth ───────────────────────────────────────────────
 const adminAuth = basicAuth({
   users     : { [ADMIN_USER]: ADMIN_PASS },
   challenge : true,
@@ -74,101 +84,130 @@ const adminAuth = basicAuth({
 });
 
 // ════════════════════════════════════════════════════════════
-//  PUBLIC ROUTES  (anyone can access these)
+//  PUBLIC ROUTES
 // ════════════════════════════════════════════════════════════
 
-// Return platform config to the signer page
-app.get('/api/config', (req, res) => {
-  const cfg       = readConfig();
-  const pdfExists = fs.existsSync(path.join(UPLOAD_DIR, 'document.pdf'));
-  res.json({ ...cfg, hasUpload: pdfExists });
+// Get config for signer page
+app.get('/api/config', async (req, res) => {
+  try {
+    const cfg       = await getConfig();
+    const pdfExists = fs.existsSync(path.join(UPLOAD_DIR, 'document.pdf'));
+    res.json({ ...cfg.toObject(), hasUpload: pdfExists });
+  } catch (err) {
+    res.status(500).json({ error: 'Could not load config.' });
+  }
 });
 
 // Submit a signature
-app.post('/api/submit', (req, res) => {
-  const { name, signatureData } = req.body;
+app.post('/api/submit', async (req, res) => {
+  try {
+    const { name, signatureData } = req.body;
+    if (!name || !name.trim())  return res.status(400).json({ error: 'Name is required.' });
+    if (!signatureData)         return res.status(400).json({ error: 'Signature is required.' });
 
-  if (!name || !name.trim())  return res.status(400).json({ error: 'Name is required.' });
-  if (!signatureData)         return res.status(400).json({ error: 'Signature is required.' });
+    const record = await Signature.create({
+      name          : name.trim(),
+      signatureData,
+      ip            : req.headers['x-forwarded-for'] || req.socket.remoteAddress || ''
+    });
 
-  const record = {
-    id            : uuid(),
-    name          : name.trim(),
-    signatureData,                                    // the drawn signature as a PNG image
-    submittedAt   : new Date().toISOString(),
-    ip            : req.headers['x-forwarded-for'] || req.socket.remoteAddress || ''
-  };
-
-  const all = readSignatures();
-  all.push(record);
-  saveSignatures(all);
-
-  res.json({ success: true, id: record.id });
+    res.json({ success: true, id: record.id });
+  } catch (err) {
+    res.status(500).json({ error: 'Could not save signature.' });
+  }
 });
 
-// Serve the uploaded PDF document
+// Serve uploaded PDF
 app.get('/api/document', (req, res) => {
   const filePath = path.join(UPLOAD_DIR, 'document.pdf');
   if (fs.existsSync(filePath)) return res.sendFile(filePath);
-  res.status(404).json({ error: 'No document has been uploaded yet.' });
+  res.status(404).json({ error: 'No document uploaded yet.' });
 });
 
 // ════════════════════════════════════════════════════════════
-//  ADMIN ROUTES  (password protected)
+//  ADMIN ROUTES (password protected)
 // ════════════════════════════════════════════════════════════
 
 // Get all signatures
-app.get('/api/admin/signatures', adminAuth, (req, res) => {
-  res.json(readSignatures());
+app.get('/api/admin/signatures', adminAuth, async (req, res) => {
+  try {
+    const records = await Signature.find().sort({ submittedAt: 1 });
+    res.json(records);
+  } catch (err) {
+    res.status(500).json({ error: 'Could not load signatures.' });
+  }
 });
 
-// Delete one signature by ID
-app.delete('/api/admin/signatures/:id', adminAuth, (req, res) => {
-  const updated = readSignatures().filter(r => r.id !== req.params.id);
-  saveSignatures(updated);
-  res.json({ success: true });
+// Delete one signature
+app.delete('/api/admin/signatures/:id', adminAuth, async (req, res) => {
+  try {
+    await Signature.deleteOne({ id: req.params.id });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Could not delete.' });
+  }
 });
 
 // Delete ALL signatures
-app.delete('/api/admin/signatures', adminAuth, (req, res) => {
-  saveSignatures([]);
-  res.json({ success: true });
+app.delete('/api/admin/signatures', adminAuth, async (req, res) => {
+  try {
+    await Signature.deleteMany({});
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Could not clear.' });
+  }
 });
 
-// Get config (admin version — same fields)
-app.get('/api/admin/config', adminAuth, (req, res) => {
-  res.json(readConfig());
+// Get config (admin)
+app.get('/api/admin/config', adminAuth, async (req, res) => {
+  try {
+    const cfg = await getConfig();
+    res.json(cfg.toObject());
+  } catch (err) {
+    res.status(500).json({ error: 'Could not load config.' });
+  }
 });
 
 // Save config
-app.post('/api/admin/config', adminAuth, (req, res) => {
-  const cfg     = readConfig();
-  const allowed = ['platformTitle', 'formTitle', 'formDesc', 'docUrl', 'docLabel', 'docType'];
-  allowed.forEach(key => { if (req.body[key] !== undefined) cfg[key] = req.body[key]; });
-  saveConfig(cfg);
-  res.json({ success: true });
+app.post('/api/admin/config', adminAuth, async (req, res) => {
+  try {
+    const cfg     = await getConfig();
+    const allowed = ['platformTitle', 'formTitle', 'formDesc', 'docUrl', 'docLabel', 'docType'];
+    allowed.forEach(key => { if (req.body[key] !== undefined) cfg[key] = req.body[key]; });
+    await cfg.save();
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Could not save config.' });
+  }
 });
 
-// Upload a PDF
-app.post('/api/admin/upload', adminAuth, upload.single('document'), (req, res) => {
-  if (!req.file) return res.status(400).json({ error: 'No file received. Must be a PDF.' });
-  // Update config so signer page shows the uploaded file
-  const cfg = readConfig();
-  cfg.docType  = 'upload';
-  cfg.docLabel = req.file.originalname;
-  saveConfig(cfg);
-  res.json({ success: true, filename: req.file.originalname });
+// Upload PDF
+app.post('/api/admin/upload', adminAuth, upload.single('document'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No file received.' });
+    const cfg    = await getConfig();
+    cfg.docType  = 'upload';
+    cfg.docLabel = req.file.originalname;
+    await cfg.save();
+    res.json({ success: true, filename: req.file.originalname });
+  } catch (err) {
+    res.status(500).json({ error: 'Upload failed.' });
+  }
 });
 
-// Export signatures as CSV
-app.get('/api/admin/export/csv', adminAuth, (req, res) => {
-  const records = readSignatures();
-  const rows    = [['#', 'Full Name', 'Submitted At', 'Record ID']];
-  records.forEach((r, i) => rows.push([i + 1, r.name, new Date(r.submittedAt).toLocaleString(), r.id]));
-  const csv = rows.map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
-  res.setHeader('Content-Type', 'text/csv');
-  res.setHeader('Content-Disposition', 'attachment; filename="signatures.csv"');
-  res.send(csv);
+// Export CSV
+app.get('/api/admin/export/csv', adminAuth, async (req, res) => {
+  try {
+    const records = await Signature.find().sort({ submittedAt: 1 });
+    const rows    = [['#', 'Full Name', 'Submitted At', 'Record ID']];
+    records.forEach((r, i) => rows.push([i + 1, r.name, new Date(r.submittedAt).toLocaleString(), r.id]));
+    const csv = rows.map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="signatures.csv"');
+    res.send(csv);
+  } catch (err) {
+    res.status(500).json({ error: 'Export failed.' });
+  }
 });
 
 // ── Page routes ──────────────────────────────────────────────
@@ -180,7 +219,7 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// ── Start the server ─────────────────────────────────────────
+// ── Start server ─────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log('\n╔══════════════════════════════════════╗');
   console.log('║   eSign Platform is running!          ║');
