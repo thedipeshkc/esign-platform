@@ -1,0 +1,519 @@
+/* ============================================================
+   style.css  —  Shared styles for both signer & admin pages
+   ============================================================ */
+
+/* ── Reset & base ─────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --ink        : #1a1a2e;
+  --accent     : #c8a96e;
+  --accent-dark: #b89060;
+  --surface    : #faf8f4;
+  --paper      : #ffffff;
+  --muted      : #8a8580;
+  --border     : #e2ddd6;
+  --border-dark: #ccc8c0;
+  --green      : #1a6b4a;
+  --green-bg   : #f0f8f4;
+  --green-bd   : #c8e6d8;
+  --red        : #b91c1c;
+  --red-bg     : #fef2f2;
+  --red-bd     : #fecaca;
+}
+
+body {
+  font-family : 'DM Sans', sans-serif;
+  background  : var(--surface);
+  color       : var(--ink);
+  min-height  : 100vh;
+  line-height : 1.5;
+}
+
+/* ── Header ───────────────────────────────────────────────── */
+.site-header {
+  background    : var(--ink);
+  color         : #fff;
+  padding       : 1.4rem 2.5rem;
+  display       : flex;
+  align-items   : center;
+  gap           : 1.1rem;
+  border-bottom : 3px solid var(--accent);
+}
+
+.site-header .seal {
+  width          : 44px;
+  height         : 44px;
+  border-radius  : 50%;
+  border         : 2px solid var(--accent);
+  display        : flex;
+  align-items    : center;
+  justify-content: center;
+  font-family    : 'DM Serif Display', serif;
+  font-size      : 17px;
+  color          : var(--accent);
+  flex-shrink    : 0;
+}
+
+.site-header h1 {
+  font-family : 'DM Serif Display', serif;
+  font-size   : 1.35rem;
+  font-weight : 400;
+}
+
+.site-header .subtitle {
+  font-size      : .67rem;
+  color          : rgba(255,255,255,.45);
+  margin-top     : 2px;
+  letter-spacing : .1em;
+  text-transform : uppercase;
+}
+
+.site-header .header-right {
+  margin-left: auto;
+}
+
+/* ── Tab navigation ───────────────────────────────────────── */
+.tab-bar {
+  display    : flex;
+  background : var(--ink);
+  padding    : 0 2.5rem;
+}
+
+.tab-bar button {
+  background     : none;
+  border         : none;
+  cursor         : pointer;
+  color          : rgba(255,255,255,.4);
+  font-family    : 'DM Sans', sans-serif;
+  font-size      : .72rem;
+  letter-spacing : .1em;
+  text-transform : uppercase;
+  padding        : .65rem 1.15rem;
+  border-bottom  : 2px solid transparent;
+  transition     : color .2s, border-color .2s;
+}
+
+.tab-bar button.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-bar button:hover  { color: #fff; }
+
+/* ── Page layout ──────────────────────────────────────────── */
+.page-wrap {
+  max-width : 720px;
+  margin    : 0 auto;
+  padding   : 2.5rem 1.25rem 5rem;
+}
+
+.page-wrap.wide {
+  max-width: 940px;
+}
+
+/* ── Panel (tab content) ──────────────────────────────────── */
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* ── Card ─────────────────────────────────────────────────── */
+.card {
+  background    : var(--paper);
+  border        : 1px solid var(--border);
+  border-radius : 5px;
+  padding       : 1.6rem 1.8rem;
+  margin-bottom : 1.25rem;
+}
+
+.card h2 {
+  font-family   : 'DM Serif Display', serif;
+  font-size     : 1.05rem;
+  font-weight   : 400;
+  margin-bottom : 1rem;
+  padding-bottom: .75rem;
+  border-bottom : 1px solid var(--border);
+}
+
+/* ── Step card (numbered) ─────────────────────────────────── */
+.step-card {
+  background    : var(--paper);
+  border        : 1px solid var(--border);
+  border-radius : 5px;
+  padding       : 1.5rem 1.75rem;
+  margin-bottom : 1.2rem;
+  position      : relative;
+}
+
+.step-badge {
+  position      : absolute;
+  top           : -1px;
+  left          : -1px;
+  background    : var(--accent);
+  color         : var(--ink);
+  font-size     : .64rem;
+  font-weight   : 500;
+  letter-spacing: .1em;
+  padding       : 3px 10px;
+  border-radius : 5px 0 5px 0;
+}
+
+.step-card h3 {
+  font-size      : .71rem;
+  letter-spacing : .1em;
+  text-transform : uppercase;
+  color          : var(--muted);
+  margin-bottom  : .85rem;
+  padding-top    : .3rem;
+}
+
+/* ── Form elements ────────────────────────────────────────── */
+.field-label {
+  display        : block;
+  font-size      : .7rem;
+  letter-spacing : .08em;
+  text-transform : uppercase;
+  color          : var(--muted);
+  margin-bottom  : 5px;
+  margin-top     : .9rem;
+}
+.field-label:first-child { margin-top: 0; }
+
+.field-input {
+  display     : block;
+  width       : 100%;
+  border      : 1px solid var(--border);
+  border-radius: 3px;
+  padding     : .58rem .88rem;
+  font-family : 'DM Sans', sans-serif;
+  font-size   : .93rem;
+  background  : var(--surface);
+  color       : var(--ink);
+  outline     : none;
+  transition  : border-color .2s;
+}
+.field-input:focus { border-color: var(--accent); }
+
+/* ── Buttons ──────────────────────────────────────────────── */
+.btn {
+  display        : inline-flex;
+  align-items    : center;
+  gap            : 6px;
+  padding        : .55rem 1.2rem;
+  border         : 1.5px solid var(--ink);
+  border-radius  : 3px;
+  background     : var(--ink);
+  color          : #fff;
+  font-family    : 'DM Sans', sans-serif;
+  font-size      : .76rem;
+  letter-spacing : .08em;
+  text-transform : uppercase;
+  cursor         : pointer;
+  text-decoration: none;
+  transition     : all .2s;
+}
+.btn:hover { background: #2e2e50; border-color: #2e2e50; }
+
+.btn-accent { background: var(--accent); border-color: var(--accent); color: var(--ink); }
+.btn-accent:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+
+.btn-ghost { background: transparent; color: var(--ink); }
+.btn-ghost:hover { background: var(--surface); }
+
+.btn-danger { background: var(--red); border-color: var(--red); color: #fff; }
+.btn-danger:hover { background: #991b1b; border-color: #991b1b; }
+
+.btn-sm { padding: .38rem .85rem; font-size: .7rem; }
+.btn-block { display: flex; width: 100%; justify-content: center; padding: .9rem; font-size: .83rem; }
+
+.btn-row {
+  display    : flex;
+  gap        : 10px;
+  margin-top : 1rem;
+  flex-wrap  : wrap;
+  align-items: center;
+}
+
+/* ── Document preview box ─────────────────────────────────── */
+.doc-box {
+  display     : flex;
+  align-items : center;
+  gap         : 12px;
+  padding     : .8rem 1rem;
+  background  : var(--surface);
+  border      : 1px solid var(--border);
+  border-radius: 3px;
+}
+
+.doc-icon {
+  width          : 36px;
+  height         : 36px;
+  background     : var(--red-bg);
+  border-radius  : 3px;
+  display        : flex;
+  align-items    : center;
+  justify-content: center;
+  flex-shrink    : 0;
+}
+
+.doc-icon svg { width: 18px; height: 18px; fill: var(--red); }
+
+.doc-info { flex: 1; min-width: 0; }
+.doc-name {
+  font-size      : .88rem;
+  font-weight    : 500;
+  white-space    : nowrap;
+  overflow       : hidden;
+  text-overflow  : ellipsis;
+}
+.doc-sub { font-size: .74rem; color: var(--muted); margin-top: 2px; }
+
+/* ── Agree checkbox row ───────────────────────────────────── */
+.agree-row {
+  display     : flex;
+  align-items : center;
+  gap         : 10px;
+  margin-top  : .85rem;
+  padding     : .62rem 1rem;
+  background  : var(--green-bg);
+  border      : 1px solid var(--green-bd);
+  border-radius: 3px;
+}
+.agree-row input[type="checkbox"] {
+  width       : 17px;
+  height      : 17px;
+  accent-color: var(--green);
+  cursor      : pointer;
+  flex-shrink : 0;
+}
+.agree-row span { font-size: .85rem; color: var(--ink); }
+
+/* ── Signature canvas ─────────────────────────────────────── */
+.canvas-wrap {
+  position     : relative;
+  border       : 1.5px dashed var(--border);
+  border-radius: 3px;
+  background   : #fdfdfb;
+  overflow     : hidden;
+  user-select  : none;
+}
+.canvas-wrap canvas {
+  display    : block;
+  width      : 100%;
+  height     : 175px;
+  cursor     : crosshair;
+  touch-action: none;
+}
+
+.sig-hint {
+  position   : absolute;
+  top        : 50%;
+  left       : 50%;
+  transform  : translate(-50%, -50%);
+  font-family: 'DM Serif Display', serif;
+  font-style : italic;
+  font-size  : 1rem;
+  color      : #ddd;
+  pointer-events: none;
+  transition : opacity .25s;
+}
+
+.canvas-tools {
+  display    : flex;
+  gap        : 8px;
+  margin-top : 8px;
+  align-items: center;
+}
+.canvas-tools .tool-label { font-size: .73rem; color: var(--muted); }
+
+.ink-dot {
+  width        : 20px;
+  height       : 20px;
+  border-radius: 50%;
+  border       : 2px solid transparent;
+  cursor       : pointer;
+  transition   : border-color .15s;
+}
+.ink-dot.active { border-color: var(--accent); }
+
+/* ── Error messages ───────────────────────────────────────── */
+.err-msg {
+  display   : none;
+  color     : var(--red);
+  font-size : .78rem;
+  margin-top: 6px;
+}
+
+/* ── Success box ──────────────────────────────────────────── */
+.success-box {
+  display      : none;
+  margin-top   : 1.5rem;
+  padding      : 1.25rem 1.5rem;
+  background   : var(--green-bg);
+  border       : 1px solid var(--green-bd);
+  border-radius: 4px;
+  text-align   : center;
+}
+.success-box h3 {
+  font-family: 'DM Serif Display', serif;
+  font-size  : 1.2rem;
+  font-weight: 400;
+  color      : var(--green);
+}
+.success-box p { font-size: .84rem; color: var(--muted); margin-top: 5px; }
+
+/* ── Stats row ────────────────────────────────────────────── */
+.stats-row {
+  display              : grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap                  : 12px;
+  margin-bottom        : 1.5rem;
+}
+.stat-card {
+  background   : var(--paper);
+  border       : 1px solid var(--border);
+  border-radius: 4px;
+  padding      : 1rem 1.1rem;
+}
+.stat-label { font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.stat-value { font-size: 1.6rem; font-weight: 500; margin-top: 4px; }
+.stat-value.sm { font-size: 1rem; padding-top: 6px; }
+
+/* ── Records list ─────────────────────────────────────────── */
+.rec-item {
+  background   : var(--paper);
+  border       : 1px solid var(--border);
+  border-radius: 4px;
+  padding      : 1rem 1.25rem;
+  margin-bottom: .75rem;
+  display      : flex;
+  align-items  : center;
+  gap          : 1.2rem;
+  flex-wrap    : wrap;
+}
+.rec-info { flex: 1; min-width: 120px; }
+.rec-name { font-size: .98rem; font-weight: 500; }
+.rec-meta { font-size: .73rem; color: var(--muted); margin-top: 2px; }
+.rec-sig img {
+  height       : 54px;
+  max-width    : 180px;
+  border       : 1px solid var(--border);
+  border-radius: 3px;
+  background   : #fff;
+  display      : block;
+}
+
+/* ── Upload drop zone ─────────────────────────────────────── */
+.drop-zone {
+  border       : 2px dashed var(--border);
+  border-radius: 4px;
+  padding      : 1.75rem;
+  text-align   : center;
+  cursor       : pointer;
+  transition   : border-color .2s;
+  position     : relative;
+}
+.drop-zone:hover, .drop-zone.dragover { border-color: var(--accent); }
+.drop-zone input[type="file"] {
+  position: absolute;
+  inset   : 0;
+  opacity : 0;
+  cursor  : pointer;
+  width   : 100%;
+  height  : 100%;
+}
+.drop-zone .dz-title { font-size: .93rem; font-weight: 500; }
+.drop-zone .dz-sub   { font-size: .8rem; color: var(--muted); margin-top: 4px; }
+.upload-status { margin-top: .6rem; font-size: .81rem; }
+.upload-status.ok  { color: var(--green); }
+.upload-status.err { color: var(--red); }
+
+/* ── Form header (signer page) ────────────────────────────── */
+.form-header { text-align: center; margin-bottom: 2.5rem; }
+.form-header h2 { font-family: 'DM Serif Display', serif; font-size: 1.85rem; font-weight: 400; }
+.form-header p  { color: var(--muted); margin-top: 6px; font-size: .87rem; line-height: 1.6; }
+
+/* ── Toast notification ───────────────────────────────────── */
+#toast {
+  position  : fixed;
+  bottom    : 1.5rem;
+  left      : 50%;
+  transform : translateX(-50%) translateY(10px);
+  background: var(--ink);
+  color     : #fff;
+  padding   : .62rem 1.25rem;
+  border-radius: 3px;
+  font-size : .8rem;
+  opacity   : 0;
+  transition: all .3s;
+  pointer-events: none;
+  z-index   : 999;
+  white-space: nowrap;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── Print styles ─────────────────────────────────────────── */
+@media print {
+  .site-header,
+  .tab-bar,
+  .no-print,
+  #toast { display: none !important; }
+
+  body { background: #fff; }
+
+  .page-wrap { max-width: 100%; padding: 0; }
+
+  .panel        { display: block !important; }
+  .panel.active { display: block !important; }
+
+  #panel-responses { display: block !important; }
+  #panel-settings  { display: none !important; }
+  #panel-doc       { display: none !important; }
+
+  .print-header { display: block !important; }
+
+  .rec-item {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    border: 1px solid #bbb;
+    margin-bottom: .75rem;
+  }
+}
+
+.print-header {
+  display      : none;
+  text-align   : center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #333;
+}
+.print-header h2 { font-family: 'DM Serif Display', serif; font-size: 1.5rem; font-weight: 400; }
+.print-header p  { font-size: .8rem; color: #666; margin-top: 4px; }
+
+/* ── Toolbar ──────────────────────────────────────────────── */
+.toolbar {
+  display        : flex;
+  justify-content: space-between;
+  align-items    : center;
+  margin-bottom  : 1.1rem;
+  flex-wrap      : wrap;
+  gap            : 10px;
+}
+.toolbar h2 { font-family: 'DM Serif Display', serif; font-size: 1.1rem; font-weight: 400; }
+.toolbar .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ── Empty state ──────────────────────────────────────────── */
+.empty-state { text-align: center; padding: 3.5rem 1rem; color: var(--muted); font-size: .88rem; }
+.empty-icon { font-family: 'DM Serif Display', serif; font-size: 2rem; color: var(--border); margin-bottom: .5rem; }
+
+/* ── Admin link button ────────────────────────────────────── */
+.header-link {
+  font-size     : .73rem;
+  color         : var(--accent);
+  text-decoration: none;
+  border        : 1px solid var(--accent);
+  padding       : .32rem .85rem;
+  border-radius : 3px;
+  letter-spacing: .06em;
+  transition    : background .2s;
+}
+.header-link:hover { background: rgba(200,169,110,.15); }

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Portal — eSign</title>
+
+  <!-- Google Fonts -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- Shared styles -->
+  <link rel="stylesheet" href="css/style.css" />
+
+  <!-- SheetJS — lets us create real Excel .xlsx files in the browser -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════
+       HEADER
+  ═══════════════════════════════════════ -->
+  <header class="site-header">
+    <div class="seal">✦</div>
+    <div>
+      <h1>Admin Portal</h1>
+      <p class="subtitle">Signature Management</p>
+    </div>
+    <div class="header-right">
+      <a href="/" target="_blank" class="header-link">View signer page ↗</a>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════════
+       TAB NAVIGATION
+  ═══════════════════════════════════════ -->
+  <nav class="tab-bar">
+    <button class="active" onclick="showTab('responses')">Responses</button>
+    <button onclick="showTab('settings')">Platform Settings</button>
+    <button onclick="showTab('doc')">Document Setup</button>
+  </nav>
+
+  <!-- ═══════════════════════════════════════
+       MAIN CONTENT
+  ═══════════════════════════════════════ -->
+  <div class="page-wrap wide">
+
+    <!-- ─────────────────────────────────────
+         PANEL: RESPONSES
+    ───────────────────────────────────── -->
+    <div id="panel-responses" class="panel active">
+
+      <!-- Stats cards -->
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">Total signatures</div>
+          <div class="stat-value" id="statTotal">–</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Latest submission</div>
+          <div class="stat-value sm" id="statLatest">–</div>
+        </div>
+      </div>
+
+      <!-- Print-only header (hidden on screen, shown when printing) -->
+      <div class="print-header">
+        <h2 id="printTitle">Signature Records</h2>
+        <p>Printed on <span id="printDate"></span></p>
+      </div>
+
+      <!-- Toolbar: title + action buttons -->
+      <div class="toolbar no-print">
+        <h2>All signatures</h2>
+        <div class="actions">
+          <button class="btn btn-ghost btn-sm" onclick="exportExcel()">Export Excel</button>
+          <a class="btn btn-ghost btn-sm" href="/api/admin/export/csv" download="signatures.csv">Export CSV</a>
+          <button class="btn btn-accent btn-sm" onclick="printAll()">Print all</button>
+          <button class="btn btn-danger btn-sm" onclick="clearAll()">Clear all</button>
+        </div>
+      </div>
+
+      <!-- Records list (filled by JavaScript) -->
+      <div id="recList">
+        <div class="empty-state">
+          <div class="empty-icon">✦</div>
+          No signatures yet.
+        </div>
+      </div>
+
+    </div><!-- /panel-responses -->
+
+    <!-- ─────────────────────────────────────
+         PANEL: SETTINGS
+    ───────────────────────────────────── -->
+    <div id="panel-settings" class="panel">
+      <div class="card">
+        <h2>Platform text</h2>
+
+        <label class="field-label" for="cfgTitle">Platform title (shown in header)</label>
+        <input class="field-input" type="text" id="cfgTitle" placeholder="Document Signature Platform" />
+
+        <label class="field-label" for="cfgForm">Form headline</label>
+        <input class="field-input" type="text" id="cfgForm" placeholder="Please review and sign" />
+
+        <label class="field-label" for="cfgDesc">Form description</label>
+        <input class="field-input" type="text" id="cfgDesc" placeholder="Read the document carefully before signing." />
+
+        <div class="btn-row">
+          <button class="btn btn-accent" onclick="saveSettings()">Save settings</button>
+        </div>
+      </div>
+    </div><!-- /panel-settings -->
+
+    <!-- ─────────────────────────────────────
+         PANEL: DOCUMENT SETUP
+    ───────────────────────────────────── -->
+    <div id="panel-doc" class="panel">
+
+      <!-- Option A: Upload PDF -->
+      <div class="card">
+        <h2>Option A — Upload a PDF</h2>
+        <p style="font-size:.84rem;color:var(--muted);margin-bottom:1rem;">
+          Upload a PDF from your computer. Users will click a button to open and read it before signing.
+        </p>
+
+        <div class="drop-zone" id="dropZone">
+          <input type="file" id="pdfInput" accept=".pdf,application/pdf" />
+          <p class="dz-title">Click here or drag a PDF file</p>
+          <p class="dz-sub">Maximum 25 MB · PDF files only</p>
+        </div>
+        <div class="upload-status" id="uploadStatus"></div>
+      </div>
+
+      <!-- Option B: External link -->
+      <div class="card">
+        <h2>Option B — External link (Google Drive, etc.)</h2>
+        <p style="font-size:.84rem;color:var(--muted);margin-bottom:1rem;">
+          Paste a shareable Google Drive link, OneDrive, Dropbox, or any public URL.
+          Make sure the link is set to "Anyone with the link can view."
+        </p>
+
+        <label class="field-label" for="cfgUrl">Document URL</label>
+        <input
+          class="field-input"
+          type="url"
+          id="cfgUrl"
+          placeholder="https://docs.google.com/document/d/…"
+        />
+
+        <label class="field-label" for="cfgLabel">Label shown to the signer</label>
+        <input
+          class="field-input"
+          type="text"
+          id="cfgLabel"
+          placeholder="Click here to open and review the document"
+        />
+
+        <div class="btn-row">
+          <button class="btn btn-accent" onclick="saveDocLink()">Save link</button>
+        </div>
+      </div>
+
+    </div><!-- /panel-doc -->
+
+  </div><!-- /page-wrap -->
+
+  <!-- Toast notification -->
+  <div id="toast"></div>
+
+  <!-- Admin JavaScript -->
+  <script src="js/admin.js"></script>
+
+</body>
+</html>

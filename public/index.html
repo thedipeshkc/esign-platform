@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign Document</title>
+
+  <!-- Google Fonts -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- Our shared stylesheet -->
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════
+       HEADER
+  ═══════════════════════════════════════ -->
+  <header class="site-header">
+    <div class="seal">✦</div>
+    <div>
+      <h1 id="hTitle">Document Signature Platform</h1>
+      <p class="subtitle">Electronic Signature Collection</p>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════════
+       MAIN CONTENT
+  ═══════════════════════════════════════ -->
+  <main class="page-wrap">
+
+    <!-- Form heading (loaded from server config) -->
+    <div class="form-header">
+      <h2 id="hForm">Please review and sign</h2>
+      <p id="hDesc">Read the document carefully, then enter your name and draw your signature.</p>
+    </div>
+
+    <!-- STEP 1 — Name -->
+    <div class="step-card">
+      <div class="step-badge">01</div>
+      <h3>Your full name</h3>
+      <label class="field-label" for="nameInput">Full legal name</label>
+      <input
+        class="field-input"
+        type="text"
+        id="nameInput"
+        placeholder="Enter your full name"
+        autocomplete="name"
+      />
+      <p class="err-msg" id="nameErr">Please enter your full name.</p>
+    </div>
+
+    <!-- STEP 2 — Document -->
+    <div class="step-card">
+      <div class="step-badge">02</div>
+      <h3>Review the document</h3>
+
+      <div class="doc-box">
+        <!-- PDF icon -->
+        <div class="doc-icon">
+          <svg viewBox="0 0 24 24">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6zm-1
+                     1.5L18.5 9H13V3.5zM8 13h8v1.5H8V13zm0 3h5v1.5H8V16zm0-6h3v1.5H8V10z"/>
+          </svg>
+        </div>
+
+        <div class="doc-info">
+          <div class="doc-name" id="docName">Loading…</div>
+          <div class="doc-sub"  id="docSub">Opens in a new tab</div>
+        </div>
+
+        <a id="docLink" class="btn btn-sm" href="#" target="_blank">Open ↗</a>
+      </div>
+
+      <!-- Agree checkbox -->
+      <div class="agree-row">
+        <input type="checkbox" id="agreeChk" />
+        <span>I have read and agree to the document above</span>
+      </div>
+      <p class="err-msg" id="agreeErr">Please confirm you have read and agree to the document.</p>
+    </div>
+
+    <!-- STEP 3 — Signature canvas -->
+    <div class="step-card">
+      <div class="step-badge">03</div>
+      <h3>Draw your signature</h3>
+
+      <div class="canvas-wrap">
+        <canvas id="sigCanvas"></canvas>
+        <div class="sig-hint" id="sigHint">Sign here</div>
+      </div>
+
+      <!-- Ink color picker + clear button -->
+      <div class="canvas-tools">
+        <span class="tool-label">Ink color:</span>
+
+        <div class="ink-dot active" style="background:#1a1a2e;" data-color="#1a1a2e" title="Black"></div>
+        <div class="ink-dot"       style="background:#0d3b8e;" data-color="#0d3b8e" title="Blue"></div>
+        <div class="ink-dot"       style="background:#7f1d1d;" data-color="#7f1d1d" title="Dark red"></div>
+
+        <button class="btn btn-ghost btn-sm" onclick="clearCanvas()" style="margin-left:auto;">
+          Clear
+        </button>
+      </div>
+
+      <p class="err-msg" id="sigErr">Please draw your signature in the box above.</p>
+    </div>
+
+    <!-- Submit button -->
+    <button class="btn btn-accent btn-block" id="submitBtn" onclick="submitForm()">
+      Submit Signature
+    </button>
+
+    <!-- Success message (shown after submit) -->
+    <div class="success-box" id="successBox">
+      <h3>✓ Signature submitted</h3>
+      <p>Your response has been recorded. Thank you!</p>
+    </div>
+
+  </main>
+
+  <!-- Toast notification -->
+  <div id="toast"></div>
+
+  <!-- Our JavaScript file for the signer page -->
+  <script src="js/signer.js"></script>
+
+</body>
+</html>
